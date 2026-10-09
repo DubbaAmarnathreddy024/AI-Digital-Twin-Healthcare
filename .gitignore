@@ -1,0 +1,57 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Frontend dependencies and builds
+node_modules/
+frontend/node_modules/
+frontend_backup/
+frontend/dist/
+
+# Git and temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Raw datasets and archives
+data/raw/
+*.zip
+
+# Local databases and model artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.h5
+*.keras
+*.onnx
+
+# Editor files
+.vscode/
+.idea/
+
+# Dependencies anywhere in the project
+**/node_modules/
+
+# Model artifacts: keep the main Random Forest model for now
+# (Do not add *.pkl unless we decide to exclude all models)
+
+# Dependencies in any folder
+**/node_modules/
+
+# Build outputs and caches
+**/dist/
+**/build/
+**/__pycache__/
+*.py[cod]
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
