@@ -1,0 +1,11 @@
+warning: in the working copy of 'backend/routes/predictions.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/App.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/api.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/Sidebar.jsx', LF will be replaced by CRLF the next time Git touches it
+ backend/main.py                     |  10 [32m+[m[31m-[m
+ backend/routes/predictions.py       |  19 [32m++[m[31m-[m
+ database/models.py                  |  72 [32m+++++++[m[31m-[m
+ frontend/src/App.jsx                | 319 [32m+++++++++++++++++++[m[31m-----------------[m
+ frontend/src/api.js                 |  24 [32m++[m[31m-[m
+ frontend/src/components/Sidebar.jsx | 103 [32m+++++++++[m[31m---[m
+ 6 files changed, 370 insertions(+), 177 deletions(-)

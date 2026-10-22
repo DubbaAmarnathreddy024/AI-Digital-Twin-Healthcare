@@ -401,3 +401,73 @@ class HealthSnapshot(Base):
         "Patient",
         back_populates="health_snapshots"
     )
+
+    
+# ============================================================
+# MEDICAL IMAGES
+# ============================================================
+
+class MedicalImage(Base):
+    __tablename__ = "medical_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    patient_id = Column(
+        Integer,
+        ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    stored_filename = Column(String(255), nullable=False, unique=True)
+    original_filename = Column(String(255), nullable=False)
+    content_type = Column(String(50), nullable=False)
+    file_size = Column(Integer, nullable=False)
+
+    analysis_status = Column(
+        String(30),
+        nullable=False,
+        default="not_started",
+    )
+
+    uploaded_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    patient = relationship("Patient")
+
+class MedicalImageAnalysis(Base):
+    __tablename__ = "medical_image_analyses"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    medical_image_id = Column(
+        Integer,
+        ForeignKey("medical_images.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    patient_id = Column(
+        Integer,
+        ForeignKey("patients.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    model_name = Column(String(150), nullable=False)
+    analysis_status = Column(
+        String(30),
+        nullable=False,
+        default="completed",
+    )
+    predictions = Column(JSONB, nullable=False)
+    clinical_warning = Column(Text, nullable=False)
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )

@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes import auth
+from backend.routes.diabetes import router as diabetes_router
+from backend.routes.ckd import router as ckd_router
 
+from backend.routes.medical_images import router as medical_images_router
 from backend.routes.patients import router as patient_router
 from backend.routes.predictions import router as prediction_router
 from backend.routes.digital_twin import router as digital_twin_router
 from backend.routes.monitoring import router as monitoring_router
 from backend.routes.explanations import router as explanation_router
+from backend.routes.prediction_history import router as prediction_history_router
 
 
 app = FastAPI(
@@ -69,3 +73,7 @@ app.include_router(digital_twin_router)
 app.include_router(monitoring_router)
 app.include_router(explanation_router)
 app.include_router(auth.router)
+app.include_router(medical_images_router)
+app.include_router(diabetes_router)
+app.include_router(ckd_router)
+app.include_router(prediction_history_router)

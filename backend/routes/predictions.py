@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from backend.database import get_db
+from database.models import User
+from backend.routes.prediction_history import get_current_patient, save_prediction
 
 from ml.predict_heart_disease import predict_heart_disease
 
@@ -29,7 +33,9 @@ class HeartDiseaseInput(BaseModel):
 
 @router.post("/heart-disease")
 def predict_heart_disease_api(
-    patient: HeartDiseaseInput
+    patient: HeartDiseaseInput,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_patient),
 ):
 
     try:
@@ -38,6 +44,15 @@ def predict_heart_disease_api(
 
         result = predict_heart_disease(
             patient_data
+        )
+
+        save_prediction(
+            db=db,
+            user=user,
+            disease="Heart Disease",
+            prediction=int(result["prediction"]),
+            probability=float(result["probability"]),
+            risk_level=str(result["risk_level"]),
         )
 
         return {

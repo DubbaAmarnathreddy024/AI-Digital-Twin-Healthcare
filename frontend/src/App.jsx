@@ -1,6 +1,8 @@
+
 import { useMemo, useState } from "react";
 import "./App.css";
 
+// Layout and shared components
 import DoctorDashboard from "./pages/DoctorDashboard";
 import useAppData from "./hooks/useAppData";
 
@@ -8,14 +10,21 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import { ErrorBanner } from "./components/common";
 
+// Patient pages
 import Dashboard from "./pages/Dashboard";
 import Patient from "./pages/Patient";
 import DigitalTwin from "./pages/DigitalTwin";
 import Monitoring from "./pages/Monitoring";
 import Prediction from "./pages/Prediction";
 import ExplainableAI from "./pages/ExplainableAI";
+import MedicalImages from "./pages/MedicalImages";
+import DiabetesPrediction from "./pages/DiabetesPrediction";
+import CKDPrediction from "./components/CKDPrediction";
+import DiseasePredictionCenter from "./components/DiseasePredictionCenter";
+import PredictionHistory from "./pages/PredictionHistory";
 import Login from "./pages/Login";
 
+// Data normalization utilities
 import {
   normalizeFeatures,
   normalizeMonitoring,
@@ -24,8 +33,23 @@ import {
   normalizeTwin,
 } from "./utils/data";
 
+// ------------------------------------------------------------
+// PAGE CONFIGURATION
+// ------------------------------------------------------------
 
 const PAGE_META = {
+  diseaseCenter: {
+    title: "Disease Prediction Center",
+    subtitle: "Explore the heart disease, diabetes, and CKD model modules",
+    Component: DiseasePredictionCenter,
+  },
+
+  predictionHistory: {
+    title: "Prediction History",
+    subtitle: "Review and compare your saved prediction results",
+    Component: PredictionHistory,
+  },
+
   dashboard: {
     title: "Dashboard",
     subtitle:
@@ -62,63 +86,118 @@ const PAGE_META = {
     subtitle: "Understanding model feature contributions",
     Component: ExplainableAI,
   },
+
+  medicalImages: {
+    title: "Medical Images",
+    subtitle: "Upload and review patient medical images",
+    Component: MedicalImages,
+  },
+
+  diabetes: {
+    title: "Diabetes Prediction",
+    subtitle: "Experimental machine-learning risk estimate",
+    Component: DiabetesPrediction,
+  },
+
+  ckd: {
+    title: "CKD Prediction",
+    subtitle: "Experimental chronic kidney disease risk estimate",
+    Component: CKDPrediction,
+  },
 };
 
+// ------------------------------------------------------------
+// AUTHENTICATION HELPERS
+// ------------------------------------------------------------
+
+function getSavedSession() {
+  try {
+    const token = localStorage.getItem("healthTwinToken");
+    const storedUser = localStorage.getItem("healthTwinUser");
+
+    if (!token || !storedUser) {
+      return { authenticated: false, user: null };
+    }
+
+    const user = JSON.parse(storedUser);
+
+    if (!user || !user.role) {
+      return { authenticated: false, user: null };
+    }
+
+    return {
+      authenticated: true,
+      user,
+    };
+  } catch {
+    return {
+      authenticated: false,
+      user: null,
+    };
+  }
+}
+
+// ------------------------------------------------------------
+// MAIN APP
+// ------------------------------------------------------------
 
 export default function App() {
-
-  // ============================================================
-  // AUTHENTICATION STATE
-  // ============================================================
-
-  // We intentionally start unauthenticated so the login page
-  // appears whenever the React application starts.
+  // Restore the saved login session.
   const [authenticated, setAuthenticated] = useState(false);
-
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem("healthTwinUser");
-
-      return stored
-        ? JSON.parse(stored)
-        : null;
-
-    } catch {
-      return null;
-    }
-  });
-
-
-  // ============================================================
-  // PATIENT APPLICATION STATE
-  // ============================================================
-
-  // IMPORTANT:
-  // Hooks must run on every render.
-  //
-  // For doctors, patient_id is null, so useAppData simply
-  // waits and does not load patient-specific information.
-  const raw = useAppData(
-    user?.role === "patient"
-      ? user?.patient_id
-      : null
-  );
-
+  const [user, setUser] = useState(null);
 
   const [page, setPage] = useState("dashboard");
   const [navOpen, setNavOpen] = useState(false);
 
+  // Hooks must run consistently on every render.
+  // Patient-specific data is loaded only for patient accounts.
+  const patientId =
+    user?.role === "patient" ? user?.patient_id : null;
 
-  // ============================================================
+  const raw = useAppData(patientId);
+
+  // ----------------------------------------------------------
+  // NORMALIZED APPLICATION DATA
+  // ----------------------------------------------------------
+
+  const view = useMemo(
+    () => ({
+      raw,
+
+      patient: normalizePatient(raw.patient, raw.twin),
+
+      twin: raw.twin,
+
+      twinView: normalizeTwin(raw.twin),
+
+      monitoring: normalizeMonitoring(raw.monitoring),
+
+      prediction: normalizePrediction(raw.twin),
+
+      features: normalizeFeatures(raw.explanations),
+
+      errors: raw.errors,
+
+      online: raw.online,
+
+      lastUpdated: raw.lastUpdated,
+    }),
+    [raw]
+  );
+
+  // ----------------------------------------------------------
   // LOGIN
-  // ============================================================
+  // ----------------------------------------------------------
 
   const handleLogin = (loggedInUser) => {
+    const token = localStorage.getItem("healthTwinToken");
 
-    console.log(
-      "LOGIN SUCCESS:",
-      loggedInUser
-    );
+    if (!token || !loggedInUser) {
+      console.error(
+        "Login failed: token or user information is missing."
+      );
+      return;
+    }
 
     setUser(loggedInUser);
     setAuthenticated(true);
@@ -126,13 +205,11 @@ export default function App() {
     setNavOpen(false);
   };
 
-
-  // ============================================================
+  // ----------------------------------------------------------
   // LOGOUT
-  // ============================================================
+  // ----------------------------------------------------------
 
   const handleLogout = () => {
-
     localStorage.removeItem("healthTwinToken");
     localStorage.removeItem("healthTwinUser");
 
@@ -142,93 +219,41 @@ export default function App() {
     setNavOpen(false);
   };
 
-
-  // ============================================================
-  // NORMALIZE PATIENT APPLICATION DATA
-  // ============================================================
-
-  const view = useMemo(
-    () => ({
-      raw,
-
-      patient: normalizePatient(
-        raw.patient,
-        raw.twin
-      ),
-
-      twin: raw.twin,
-
-      twinView: normalizeTwin(
-        raw.twin
-      ),
-
-      monitoring: normalizeMonitoring(
-        raw.monitoring
-      ),
-
-      prediction: normalizePrediction(
-        raw.twin
-      ),
-
-      features: normalizeFeatures(
-        raw.explanations
-      ),
-
-      errors: raw.errors,
-
-      online: raw.online,
-
-      lastUpdated: raw.lastUpdated,
-    }),
-
-    [raw]
-  );
-
-
-  // ============================================================
+  // ----------------------------------------------------------
   // NAVIGATION
-  // ============================================================
+  // ----------------------------------------------------------
 
   const navigate = (id) => {
+    if (!PAGE_META[id]) {
+      console.warn(`Unknown page requested: ${id}`);
+      return;
+    }
 
     setPage(id);
     setNavOpen(false);
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    if (typeof window !== "undefined") {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
-
-  // ============================================================
+  // ----------------------------------------------------------
   // LOGIN SCREEN
-  // ============================================================
+  // ----------------------------------------------------------
 
-  if (!authenticated) {
-
-    return (
-      <Login
-        onLogin={handleLogin}
-      />
-    );
+  if (!authenticated || !user) {
+    return <Login onLogin={handleLogin} />;
   }
 
-
-  // ============================================================
+  // ----------------------------------------------------------
   // DOCTOR INTERFACE
-  // ============================================================
+  // ----------------------------------------------------------
 
-  // Doctors do NOT use the patient sidebar/dashboard.
-  //
-  // doctor001
-  //     ↓
-  // DoctorDashboard
-  //
-  // Patient users continue to the existing application below.
-
-  if (user?.role === "doctor") {
-
+  // Doctors use the dedicated doctor dashboard.
+  if (user.role === "doctor") {
     return (
       <DoctorDashboard
         user={user}
@@ -237,29 +262,28 @@ export default function App() {
     );
   }
 
+  // Only patient accounts should access the patient interface.
+  if (user.role !== "patient") {
+    handleLogout();
+    return <Login onLogin={handleLogin} />;
+  }
 
-  // ============================================================
+  // ----------------------------------------------------------
   // PATIENT INTERFACE
-  // ============================================================
+  // ----------------------------------------------------------
 
   const {
     title,
     subtitle,
     Component,
-  } = PAGE_META[page];
-
+  } = PAGE_META[page] || PAGE_META.dashboard;
 
   return (
     <div className="app-shell">
-
       {/* Accessibility */}
-      <a
-        className="skip-link"
-        href="#main"
-      >
+      <a className="skip-link" href="#main">
         Skip to main content
       </a>
-
 
       {/* Sidebar */}
       <Sidebar
@@ -270,21 +294,19 @@ export default function App() {
         online={view.online}
       />
 
-
       <div className="main-col">
-
         {/* Header */}
         <Header
           title={title}
           subtitle={subtitle}
-          patientName={view.patient.name}
+          patientName={view.patient?.name || "Patient"}
           online={view.online}
           onMenu={() => setNavOpen(true)}
         />
 
-
         {/* Logout */}
         <button
+          type="button"
           className="logout-button"
           onClick={handleLogout}
           title={`Logout ${user?.username || ""}`}
@@ -292,48 +314,43 @@ export default function App() {
           Logout
         </button>
 
-
         {/* Main content */}
         <main
           id="main"
           className="content"
           key={page}
         >
+          <ErrorBanner errors={view.errors} />
 
-          <ErrorBanner
-            errors={view.errors}
-          />
-
-
-          {raw.loading ? (
-
-            <div
-              className="loading"
-              role="status"
-            >
-
+          {/* Medical image page manages its own loading state.
+              It must remain accessible even while other patient
+              dashboard data is loading. */}
+          {page === "medicalImages" ? (
+            <MedicalImages />
+          ) : page === "diseaseCenter" ? (
+            <DiseasePredictionCenter onNavigate={navigate} />
+          ) : page === "diabetes" ? (
+            <DiabetesPrediction />
+          ) : page === "ckd" ? (
+            <CKDPrediction />
+          ) : page === "predictionHistory" ? (
+            <PredictionHistory />
+          ) : raw.loading ? (
+            <div className="loading" role="status">
               <span
                 className="spinner"
                 aria-hidden="true"
               />
-
               Loading patient data...
-
             </div>
-
           ) : (
-
             <Component
               data={view}
               onNavigate={navigate}
             />
-
           )}
-
         </main>
-
       </div>
-
     </div>
   );
 }

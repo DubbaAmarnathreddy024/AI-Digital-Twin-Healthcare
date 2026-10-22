@@ -54,3 +54,25 @@ export const getPatientId = () => {
 
   return user?.patient_id || null;
 };
+
+// ============================================================
+// PREDICTION HISTORY API HELPERS
+// ============================================================
+
+export const getPredictionHistory = async ({ disease, limit = 50, offset = 0 } = {}) => {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (disease) params.set("disease", disease);
+  const response = await fetch(`${API_URL}/predictions/history?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
+  });
+  if (!response.ok) throw new Error(response.status === 401 ? "Please sign in again." : "Could not load prediction history.");
+  return response.json();
+};
+
+export const getPredictionComparison = async () => {
+  const response = await fetch(`${API_URL}/predictions/compare`, {
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
+  });
+  if (!response.ok) throw new Error(response.status === 401 ? "Please sign in again." : "Could not load prediction comparison.");
+  return response.json();
+};
